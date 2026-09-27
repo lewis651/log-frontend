@@ -48,7 +48,7 @@ const TESTIMONIALS = [
     author: 'Sarah Mitchell', role: 'Logistics Manager, EuroGoods Ltd', avatar: 'SM', stars: 5,
   },
   {
-    text: 'The admin portal is intuitive and powerful. I can track every shipment, get instant reports, and communicate with the team all from one place.',
+    text: 'I can track every shipment, get instant reports, and communicate with the team all from one place. It has been great using Logistiqo',
     author: 'James Okafor', role: 'CEO, Lagos Export Group', avatar: 'JO', stars: 5,
   },
   {
