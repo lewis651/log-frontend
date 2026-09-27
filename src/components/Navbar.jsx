@@ -76,14 +76,6 @@ export default function Navbar() {
         </Link>
       </div>
 
-      {/* Scroll To Top */}
-      <button
-        className={`scroll-top-btn ${showTop ? 'visible' : ''}`}
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        aria-label="Scroll to top"
-      >
-        <ChevronUp size={20} />
-      </button>
     </>
   );
 }

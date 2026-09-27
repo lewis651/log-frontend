@@ -98,14 +98,14 @@ export default function Contact() {
                   <div className="contact-detail-icon"><Phone size={18} /></div>
                   <div>
                     <h5>Phone</h5>
-                    <p>+1 (800) 555-LOGQ<br />+1 (212) 555-9482</p>
+                    <p>+1 (458) 344-0688</p>
                   </div>
                 </div>
                 <div className="contact-detail">
                   <div className="contact-detail-icon"><Mail size={18} /></div>
                   <div>
                     <h5>Email</h5>
-                    <p>support@logistiqo.com<br />sales@logistiqo.com</p>
+                    <p>support@logistiqo.com<br />sales@logistiqo.com<br />jefferylawrence973@gmail.com</p>
                   </div>
                 </div>
                 <div className="contact-detail">

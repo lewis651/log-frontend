@@ -60,3 +60,6 @@ export const submitContact = (data) =>
 
 export const getMessages = () =>
   fetch(`${API_BASE}/contact`, { headers: getHeaders() }).then(handleResponse);
+
+export const getChats = () =>
+  fetch(`${API_BASE}/chats`, { headers: getHeaders() }).then(handleResponse);

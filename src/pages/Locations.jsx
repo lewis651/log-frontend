@@ -9,7 +9,7 @@ const stagger = { visible: { transition: { staggerChildren: 0.1 } } };
 
 const LOCATIONS = [
   { region: 'North America', offices: [
-    { city: 'New York, USA', address: '1 World Trade Center, Suite 4500, NY 10007', phone: '+1 (555) 123-4567', email: 'na-ops@logistiqo.com' },
+    { city: 'New York, USA', address: '1 World Trade Center, Suite 4500, NY 10007', phone: '+1 (458) 344-0688', email: 'jefferylawrence973@gmail.com' },
     { city: 'Los Angeles, USA', address: 'Port of LA Logistics Hub, CA 90731', phone: '+1 (555) 987-6543', email: 'la-hub@logistiqo.com' },
   ]},
   { region: 'Europe', offices: [

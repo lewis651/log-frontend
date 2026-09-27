@@ -90,11 +90,11 @@ export default function Footer() {
             </div>
             <div className="footer-contact-item">
               <Phone size={15} />
-              <span>+1 (800) 555-LOGQ<br />+1 (212) 555-9482</span>
+              <span>+1 (458) 344-0688</span>
             </div>
             <div className="footer-contact-item">
               <Mail size={15} />
-              <span>support@logistiqo.com<br />sales@logistiqo.com</span>
+              <span>support@logistiqo.com<br />sales@logistiqo.com<br />jefferylawrence973@gmail.com</span>
             </div>
             <div className="footer-contact-item">
               <Clock size={15} />

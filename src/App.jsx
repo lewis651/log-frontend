@@ -12,12 +12,12 @@ import Locations from './pages/Locations';
 import Industries from './pages/Industries';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
-import ChatBot from './components/ChatBot';
+import LiveChat from './components/LiveChat';
 
 function App() {
   return (
     <Router>
-      <ChatBot />
+      <LiveChat />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />

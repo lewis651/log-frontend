@@ -5,12 +5,15 @@ import 'leaflet/dist/leaflet.css';
 import {
   Anchor, LayoutDashboard, Package, MessageSquare, LogOut,
   Plus, Trash2, Pause, Play, CheckCircle2, XCircle, AlertCircle,
-  Loader2, RefreshCw, Search, X, Eye, ChevronDown
+  Loader2, RefreshCw, Search, X, Eye, ChevronDown, Mail, Send
 } from 'lucide-react';
 import {
   adminLogin, createShipment, getShipments, updateShipment,
-  deleteShipment, getMessages
+  deleteShipment, getMessages, getChats
 } from '../api';
+import { io } from 'socket.io-client';
+
+const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api$/, '');
 
 // ── Fix leaflet icons ──────────────────────────────────────────────────────────
 delete L.Icon.Default.prototype._getIconUrl;
@@ -386,6 +389,13 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [shipments, setShipments] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [chatSessions, setChatSessions] = useState([]);
+  
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [liveChats, setLiveChats] = useState({});
+  const [liveChatInput, setLiveChatInput] = useState('');
+  const [adminSocket, setAdminSocket] = useState(null);
+  const chatEndRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState(null);
@@ -417,12 +427,63 @@ export default function Admin() {
     } catch {}
   };
 
+  const fetchChatSessions = async () => {
+    try {
+      const data = await getChats();
+      setChatSessions(data);
+    } catch {}
+  };
+
   useEffect(() => {
     if (admin) {
       fetchShipments();
       fetchMessages();
+      fetchChatSessions();
+
+      const newSocket = io(SOCKET_URL);
+      setAdminSocket(newSocket);
+
+      newSocket.on('receive_message', (message) => {
+        setLiveChats(prev => ({
+          ...prev,
+          [message.tracking_number]: [...(prev[message.tracking_number] || []), message]
+        }));
+        fetchChatSessions(); // Update sessions list timestamp
+      });
+
+      newSocket.on('chat_history', (history) => {
+        if (history.length > 0) {
+          const tNum = history[0].tracking_number;
+          setLiveChats(prev => ({ ...prev, [tNum]: history }));
+        }
+      });
+
+      return () => newSocket.disconnect();
     }
   }, [admin]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [liveChats, activeChatId]);
+
+  const joinChat = (tracking_number) => {
+    setActiveChatId(tracking_number);
+    if (adminSocket && !liveChats[tracking_number]) {
+      adminSocket.emit('join_chat', { tracking_number, isAdmin: true });
+    }
+  };
+
+  const sendAdminMessage = (e) => {
+    e.preventDefault();
+    if (!liveChatInput.trim() || !adminSocket || !activeChatId) return;
+
+    adminSocket.emit('send_message', {
+      tracking_number: activeChatId,
+      sender: 'admin',
+      message: liveChatInput.trim(),
+    });
+    setLiveChatInput('');
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('admin_token');
@@ -503,7 +564,8 @@ export default function Admin() {
   const TABS = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
     { id: 'shipments', label: 'Shipments', icon: <Package size={18} /> },
-    { id: 'messages', label: 'Messages', icon: <MessageSquare size={18} /> },
+    { id: 'live_chat', label: 'Live Chat', icon: <MessageSquare size={18} /> },
+    { id: 'messages', label: 'Inbox', icon: <Mail size={18} /> },
   ];
 
   return (
@@ -874,6 +936,102 @@ export default function Admin() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Live Chat Tab */}
+        {activeTab === 'live_chat' && (
+          <div className="fade-in" style={{ height: 'calc(100vh - 4rem)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ marginBottom: '1.5rem', flexShrink: 0 }}>
+              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.25rem' }}>Live Support</h1>
+              <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>Real-time chats with customers</p>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '1.5rem', flex: 1, minHeight: 0 }}>
+              {/* Sidebar: Chat sessions */}
+              <div className="admin-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+                <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Active Sessions</span>
+                  <span style={{ background: 'var(--primary)', color: 'white', padding: '0.1rem 0.5rem', borderRadius: '1rem', fontSize: '0.75rem' }}>
+                    {chatSessions.length}
+                  </span>
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                  {chatSessions.length === 0 ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No active chats</div>
+                  ) : (
+                    chatSessions.map(session => (
+                      <div
+                        key={session.tracking_number}
+                        onClick={() => joinChat(session.tracking_number)}
+                        style={{
+                          padding: '1rem',
+                          borderBottom: '1px solid var(--border)',
+                          cursor: 'pointer',
+                          background: activeChatId === session.tracking_number ? 'rgba(230,48,48,0.05)' : 'transparent',
+                          borderLeft: activeChatId === session.tracking_number ? '3px solid var(--primary)' : '3px solid transparent',
+                        }}
+                      >
+                        <div style={{ fontWeight: 600, color: 'var(--primary)' }}>{session.tracking_number}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Last msg: {formatDate(session.last_msg)}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Chat Window */}
+              <div className="admin-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+                {activeChatId ? (
+                  <>
+                    <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', fontWeight: 600 }}>
+                      Chat: <span style={{ color: 'var(--primary)' }}>{activeChatId}</span>
+                    </div>
+                    
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-light)' }}>
+                      {(liveChats[activeChatId] || []).map((msg, idx) => {
+                        const isAdmin = msg.sender === 'admin';
+                        return (
+                          <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: isAdmin ? 'flex-end' : 'flex-start' }}>
+                            <div style={{
+                              maxWidth: '75%', padding: '0.75rem 1rem', borderRadius: '1rem', fontSize: '0.9rem',
+                              background: isAdmin ? 'var(--primary)' : 'white',
+                              color: isAdmin ? 'white' : 'var(--text-dark)',
+                              border: isAdmin ? 'none' : '1px solid var(--border)',
+                              borderBottomRightRadius: isAdmin ? '0' : '1rem',
+                              borderBottomLeftRadius: isAdmin ? '1rem' : '0'
+                            }}>
+                              {msg.message}
+                            </div>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                              {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      <div ref={chatEndRef} />
+                    </div>
+
+                    <form onSubmit={sendAdminMessage} style={{ display: 'flex', gap: '0.5rem', padding: '1rem', borderTop: '1px solid var(--border)' }}>
+                      <input
+                        className="form-control"
+                        style={{ flex: 1 }}
+                        placeholder="Type a message..."
+                        value={liveChatInput}
+                        onChange={e => setLiveChatInput(e.target.value)}
+                      />
+                      <button type="submit" className="btn btn-primary" disabled={!liveChatInput.trim()}>
+                        <Send size={18} />
+                      </button>
+                    </form>
+                  </>
+                ) : (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                    Select a session to start chatting
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

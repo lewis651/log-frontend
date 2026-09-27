@@ -174,49 +174,6 @@ export default function Services() {
         </div>
       </section>
 
-      {/* Industries */}
-      <section className="section-pad">
-        <div className="container">
-          <div className="text-center mb-5">
-            <div className="section-tag">INDUSTRIES WE SERVE</div>
-            <h2 style={{ fontSize: '2.2rem', fontWeight: 800 }}>Expertise Across Sectors</h2>
-          </div>
-          <div className="industries-grid">
-            {[
-              { label: 'Manufacturing', image: '/images/img-1581091226825-a6a2a5aee158.jpg' },
-              { label: 'Retail & E-Commerce', image: '/images/img-1556740738-b6a63e27c4df.jpg' },
-              { label: 'Healthcare', image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=70&w=1200' },
-              { label: 'Automotive', image: '/images/img-1562259929-b4e1fd3aef09.jpg' },
-              { label: 'Oil & Energy', image: '/images/img-1518709268805-4e9042af9f23.jpg' },
-              { label: 'Agriculture', image: '/images/img-1500382017468-9049fed747ef.jpg' },
-              { label: 'Technology', image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=70&w=1200' },
-              { label: 'Aerospace', image: '/images/img-1436491865332-7a61a109cc05.jpg' },
-            ].map(({ label, image }) => (
-              <div
-                key={label}
-                style={{
-                  background: '#fff', border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-lg)', overflow: 'hidden',
-                  transition: 'var(--transition)', cursor: 'default',
-                  display: 'flex', flexDirection: 'column'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = 'var(--primary)';
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.06)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <img src={image} alt={label} style={{ width: '100%', height: '140px', objectFit: 'cover' }} loading="lazy" decoding="async" />
-                <div style={{ padding: '1rem', fontWeight: 700, fontSize: '0.95rem', textAlign: 'center' }}>{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA */}
       <section className="section-pad-sm">
         <div className="cta-section">
