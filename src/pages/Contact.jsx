@@ -97,15 +97,15 @@ export default function Contact() {
                 <div className="contact-detail">
                   <div className="contact-detail-icon"><Phone size={18} /></div>
                   <div>
-                    <h5>Phone</h5>
-                    <p>+1 (458) 344-0688</p>
+                    <h5>Phone/WhatsApp</h5>
+                    <p> Call ( +1 847-737-8213 ) / WhatsApp (+1 (409) 291-9531  ) </p>
                   </div>
                 </div>
                 <div className="contact-detail">
                   <div className="contact-detail-icon"><Mail size={18} /></div>
                   <div>
                     <h5>Email</h5>
-                    <p>support@logistiqo.com<br />sales@logistiqo.com<br />jefferylawrence973@gmail.com</p>
+                    <p>Logistiqo@gmail.com</p>
                   </div>
                 </div>
                 <div className="contact-detail">
