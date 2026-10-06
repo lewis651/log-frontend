@@ -591,31 +591,33 @@ export default function Admin() {
           Logisti<span>qo</span>
         </div>
 
-        <div style={{ marginBottom: '0.5rem', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.06)' }}>
+        <div className="admin-user-summary" style={{ marginBottom: '0.5rem', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.06)' }}>
           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.7rem', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Logged in as</div>
           <div style={{ color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>{admin.username}</div>
         </div>
 
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0.75rem 0' }} />
+        <div className="admin-sidebar-divider" style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '0.75rem 0' }} />
 
-        {TABS.map(({ id, label, icon }) => (
-          <button
-            key={id}
-            className={`admin-nav-item ${activeTab === id ? 'active' : ''}`}
-            onClick={() => setActiveTab(id)}
-          >
-            {icon} {label}
-            {id === 'messages' && messages.length > 0 && (
-              <span style={{
-                marginLeft: 'auto', background: 'var(--primary)',
-                color: 'white', borderRadius: '9999px', padding: '0.1rem 0.5rem',
-                fontSize: '0.7rem', fontWeight: 700,
-              }}>{messages.length}</span>
-            )}
-          </button>
-        ))}
+        <div className="admin-nav">
+          {TABS.map(({ id, label, icon }) => (
+            <button
+              key={id}
+              className={`admin-nav-item ${activeTab === id ? 'active' : ''}`}
+              onClick={() => setActiveTab(id)}
+            >
+              {icon} {label}
+              {id === 'messages' && messages.length > 0 && (
+                <span style={{
+                  marginLeft: 'auto', background: 'var(--primary)',
+                  color: 'white', borderRadius: '9999px', padding: '0.1rem 0.5rem',
+                  fontSize: '0.7rem', fontWeight: 700,
+                }}>{messages.length}</span>
+              )}
+            </button>
+          ))}
+        </div>
 
-        <div style={{ flex: 1 }} />
+        <div className="admin-sidebar-spacer" style={{ flex: 1 }} />
         <button className="admin-logout" onClick={handleLogout}>
           <LogOut size={16} /> Logout
         </button>
@@ -739,7 +741,7 @@ export default function Admin() {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: selectedShipment ? '1fr 1fr' : '1fr', gap: '1.5rem' }}>
+            <div className="admin-shipments-layout" style={{ display: 'grid', gridTemplateColumns: selectedShipment ? '1fr 1fr' : '1fr', gap: '1.5rem' }}>
               {/* Table */}
               <div className="admin-card" style={{ overflow: 'auto' }}>
                 <div className="admin-card-title">
@@ -942,13 +944,13 @@ export default function Admin() {
 
         {/* Live Chat Tab */}
         {activeTab === 'live_chat' && (
-          <div className="fade-in" style={{ height: 'calc(100vh - 4rem)', display: 'flex', flexDirection: 'column' }}>
+          <div className="fade-in admin-chat-page" style={{ height: 'calc(100vh - 4rem)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ marginBottom: '1.5rem', flexShrink: 0 }}>
               <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.25rem' }}>Live Support</h1>
               <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>Real-time chats with customers</p>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '1.5rem', flex: 1, minHeight: 0 }}>
+            <div className="admin-chat-layout" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '1.5rem', flex: 1, minHeight: 0 }}>
               {/* Sidebar: Chat sessions */}
               <div className="admin-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
                 <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>

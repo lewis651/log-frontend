@@ -1084,7 +1084,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 .leaflet-container { background: #e8edf5; }
 
 /* ─── Admin Page ─────────────────────────────────────────────────────────── */
-.admin-layout { display: flex; min-height: 100vh; }
+.admin-layout { display: flex; min-height: 100vh; min-width: 0; }
 .admin-sidebar {
   width: 260px;
   background: var(--secondary);
@@ -1105,6 +1105,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   padding: 2rem;
   background: var(--bg-light);
   min-height: 100vh;
+  min-width: 0;
 }
 .admin-sidebar-logo {
   font-family: 'Outfit', sans-serif;
@@ -1133,6 +1134,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
 }
 .admin-nav-item:hover { background: rgba(255,255,255,0.07); color: white; }
 .admin-nav-item.active { background: var(--primary); color: white; }
+.admin-nav { display: contents; }
 .admin-logout {
   margin-top: auto;
   display: flex;
@@ -1157,6 +1159,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   padding: 1.75rem;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
+  min-width: 0;
 }
 .admin-card-title {
   font-size: 1.1rem;
@@ -1256,6 +1259,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   grid-template-columns: 1fr 1.4fr;
   gap: 3rem;
 }
+.contact-grid > * { min-width: 0; }
 .contact-info-card {
   background: var(--secondary);
   border-radius: var(--radius-xl);
@@ -1280,7 +1284,7 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   flex-shrink: 0;
 }
 .contact-detail h5 { color: rgba(255,255,255,0.6); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.25rem; font-weight: 600; }
-.contact-detail p { color: white; font-size: 0.9rem; }
+.contact-detail p { color: white; font-size: 0.9rem; overflow-wrap: anywhere; }
 .contact-form-card {
   background: var(--bg-white);
   border: 1px solid var(--border);
@@ -1444,6 +1448,8 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   .team-grid { grid-template-columns: repeat(2, 1fr); }
   .tracking-details-grid { grid-template-columns: repeat(2, 1fr); }
   .admin-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .admin-sidebar { width: 220px; }
+  .admin-main { margin-left: 220px; }
 }
 
 @media (max-width: 768px) {
@@ -1484,9 +1490,43 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   .form-row { grid-template-columns: 1fr; }
   .tracking-details-grid { grid-template-columns: 1fr 1fr; }
   
-  .admin-sidebar { display: none; }
-  .admin-main { margin-left: 0; }
+  .admin-layout { flex-direction: column; }
+  .admin-sidebar {
+    position: sticky;
+    top: 0;
+    left: auto;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    padding: 0.75rem 1rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    overflow: visible;
+  }
+  .admin-sidebar-logo { order: 1; flex: 1; margin-bottom: 0; font-size: 1.1rem; }
+  .admin-user-summary, .admin-sidebar-divider, .admin-sidebar-spacer { display: none !important; }
+  .admin-nav {
+    order: 3;
+    display: flex;
+    flex: 0 0 100%;
+    gap: 0.35rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .admin-nav-item { width: auto; flex: 0 0 auto; padding: 0.65rem 0.75rem; white-space: nowrap; }
+  .admin-logout { order: 2; width: auto; margin: 0; padding: 0.5rem 0.75rem; }
+  .admin-main { width: 100%; margin-left: 0; padding: 1.25rem; min-height: 0; }
   .admin-stats-grid { grid-template-columns: 1fr 1fr; }
+  .admin-shipments-layout { grid-template-columns: minmax(0, 1fr) !important; }
+  .admin-chat-page { height: auto !important; min-height: calc(100vh - 8rem); }
+  .admin-chat-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(140px, 30vh) minmax(280px, 1fr);
+  }
+  .contact-section { padding: 3.5rem 0; }
+  .contact-grid { gap: 1.5rem; }
+  .contact-info-card, .contact-form-card { padding: 1.5rem; }
   
   .stats-row { flex-wrap: wrap; }
   .testimonials-header { flex-direction: column; align-items: flex-start; }
@@ -1500,6 +1540,11 @@ textarea.form-control { resize: vertical; min-height: 140px; }
   .tracking-details-grid { grid-template-columns: 1fr; }
   .team-grid { grid-template-columns: 1fr; }
   .admin-stats-grid { grid-template-columns: 1fr; }
+  .admin-main { padding: 1rem; }
+  .admin-card { padding: 1.1rem; }
+  .admin-card-title { flex-wrap: wrap; gap: 0.5rem; }
+  .contact-section { padding: 2.5rem 0; }
+  .contact-info-card, .contact-form-card { padding: 1.25rem; border-radius: var(--radius-lg); }
   .milestones::before { display: none; }
   .milestone-item { flex-direction: column; gap: 0.5rem; }
   

@@ -72,7 +72,7 @@ export default function Contact() {
         </div>
       </div>
 
-      <section className="section-pad">
+      <section className="section-pad contact-section">
         <div className="container">
           <motion.div
             className="contact-grid"
