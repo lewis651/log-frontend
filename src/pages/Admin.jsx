@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import {
   Anchor, LayoutDashboard, Package, MessageSquare, LogOut,
   Plus, Trash2, Pause, Play, CheckCircle2, XCircle, AlertCircle,
-  Loader2, RefreshCw, Search, X, Eye, ChevronDown, Mail, Send
+  Loader2, RefreshCw, Search, X, Eye, Mail, Send
 } from 'lucide-react';
 import {
   adminLogin, createShipment, getShipments, updateShipment,
@@ -32,14 +32,12 @@ const currentIcon = L.divIcon({
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const geocodeAddress = async (query) => {
   if (!query.trim()) return null;
-  // Try parsing as "lat,lng" first
   const parts = query.split(',');
   if (parts.length === 2) {
     const lat = parseFloat(parts[0].trim());
     const lng = parseFloat(parts[1].trim());
     if (!isNaN(lat) && !isNaN(lng)) return { lat, lng, display: query };
   }
-  // Use Nominatim geocoding
   const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
   const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
   const data = await res.json();
@@ -69,7 +67,7 @@ function LoginForm({ onLogin }) {
     if (!form.username || !form.password) { setError('Please enter username and password.'); return; }
     setLoading(true); setError('');
     try {
-      const data = await adminLogin(form.username, form.password);
+      const data = await adminLogin(form.username.trim(), form.password);
       localStorage.setItem('admin_token', data.token);
       localStorage.setItem('admin_user', JSON.stringify(data.admin));
       onLogin(data.admin);
@@ -137,16 +135,9 @@ function LoginForm({ onLogin }) {
 function ShipmentModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
     tracking_number: generateTrackingNumber(),
-    sender_name: '',
-    sender_address: '',
-    receiver_name: '',
-    receiver_address: '',
-    start_location: '',
-    end_location: '',
-    total_hours: '',
-    weight: '',
-    description: '',
-    package_type: '',
+    sender_name: '', sender_address: '', receiver_name: '', receiver_address: '',
+    start_location: '', end_location: '', total_hours: '', weight: '',
+    description: '', package_type: '',
   });
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
@@ -221,7 +212,6 @@ function ShipmentModal({ onClose, onCreated }) {
         {geoError && <div className="alert alert-error mb-3"><AlertCircle size={16} />{geoError}</div>}
 
         <form onSubmit={handleSubmit}>
-          {/* Tracking Number */}
           <div className="form-group">
             <label className="form-label">Tracking Number *</label>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -239,7 +229,6 @@ function ShipmentModal({ onClose, onCreated }) {
             {errors.tracking_number && <div className="form-error">{errors.tracking_number}</div>}
           </div>
 
-          {/* Sender & Receiver */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
               <label className="form-label">Sender Name</label>
@@ -262,10 +251,9 @@ function ShipmentModal({ onClose, onCreated }) {
             </div>
           </div>
 
-          {/* Locations */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
-              <label className="form-label">Origin Location * <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>(City, Country or lat,lng)</span></label>
+              <label className="form-label">Origin Location *</label>
               <input
                 className={`form-control ${errors.start_location ? 'error' : ''}`}
                 value={form.start_location}
@@ -275,7 +263,7 @@ function ShipmentModal({ onClose, onCreated }) {
               {errors.start_location && <div className="form-error">{errors.start_location}</div>}
             </div>
             <div className="form-group">
-              <label className="form-label">Destination Location * <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>(City, Country or lat,lng)</span></label>
+              <label className="form-label">Destination Location *</label>
               <input
                 className={`form-control ${errors.end_location ? 'error' : ''}`}
                 value={form.end_location}
@@ -286,14 +274,11 @@ function ShipmentModal({ onClose, onCreated }) {
             </div>
           </div>
 
-          {/* Duration, Weight, Type */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
               <label className="form-label">Transit Duration (Hours) *</label>
               <input
-                type="number"
-                min="0.1"
-                step="0.1"
+                type="number" min="0.1" step="0.1"
                 className={`form-control ${errors.total_hours ? 'error' : ''}`}
                 value={form.total_hours}
                 onChange={e => f('total_hours', e.target.value)}
@@ -332,7 +317,7 @@ function ShipmentModal({ onClose, onCreated }) {
               className="form-control"
               value={form.description}
               onChange={e => f('description', e.target.value)}
-              placeholder="Cargo contents, special handling instructions, fragile, temperature-sensitive, etc."
+              placeholder="Cargo contents, special handling instructions..."
               rows={2}
             />
           </div>
@@ -341,7 +326,7 @@ function ShipmentModal({ onClose, onCreated }) {
             <button type="button" className="btn btn-outline flex-1" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary flex-1" disabled={loading || geocoding}>
               {geocoding
-                ? <><Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite' }} /> Geocoding locations...</>
+                ? <><Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite' }} /> Geocoding...</>
                 : loading
                   ? <><Loader2 size={16} style={{ animation: 'spin 0.8s linear infinite' }} /> Creating...</>
                   : <><Plus size={16} /> Create Shipment</>
@@ -369,11 +354,11 @@ function AdminMiniMap({ shipment }) {
   return (
     <div className="admin-map-wrapper">
       <MapContainer center={center} zoom={3} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap' />
         <Polyline positions={[[shipment.start_lat, shipment.start_lng], [shipment.end_lat, shipment.end_lng]]} color="#e5e7eb" weight={2} dashArray="5 8" />
         <Polyline positions={[[shipment.start_lat, shipment.start_lng], [currentLat, currentLng]]} color="var(--primary)" weight={3} />
         <Marker position={[currentLat, currentLng]} icon={currentIcon}>
-          <Popup>{shipment.tracking_number}<br />Progress: {progress * 100}%</Popup>
+          <Popup>{shipment.tracking_number}<br />Progress: {Math.round(progress * 100)}%</Popup>
         </Marker>
       </MapContainer>
     </div>
@@ -412,7 +397,7 @@ export default function Admin() {
     setLoading(true);
     try {
       const data = await getShipments();
-      setShipments(data);
+      setShipments(Array.isArray(data) ? data : []);
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
@@ -423,14 +408,14 @@ export default function Admin() {
   const fetchMessages = async () => {
     try {
       const data = await getMessages();
-      setMessages(data);
+      setMessages(Array.isArray(data) ? data : []);
     } catch {}
   };
 
   const fetchChatSessions = async () => {
     try {
       const data = await getChats();
-      setChatSessions(data);
+      setChatSessions(Array.isArray(data) ? data : []);
     } catch {}
   };
 
@@ -448,7 +433,7 @@ export default function Admin() {
           ...prev,
           [message.tracking_number]: [...(prev[message.tracking_number] || []), message]
         }));
-        fetchChatSessions(); // Update sessions list timestamp
+        fetchChatSessions();
       });
 
       newSocket.on('chat_history', (history) => {
@@ -499,8 +484,8 @@ export default function Admin() {
       const startedAt = new Date(shipment.started_at).getTime();
       const elapsed = (now - startedAt) / 3600000;
       const new_elapsed = shipment.is_paused
-        ? parseFloat(shipment.elapsed_hours) // resuming — keep elapsed
-        : Math.min(elapsed, parseFloat(shipment.total_hours)); // pausing — save current elapsed
+        ? parseFloat(shipment.elapsed_hours)
+        : Math.min(elapsed, parseFloat(shipment.total_hours));
       
       await updateShipment(key, {
         is_paused: !shipment.is_paused,
@@ -529,7 +514,7 @@ export default function Admin() {
   };
 
   const handleDelete = async (tracking_number) => {
-    if (!window.confirm(`Delete shipment ${tracking_number}? This action cannot be undone.`)) return;
+    if (!window.confirm(`Delete shipment ${tracking_number}?`)) return;
     setActionLoading(p => ({ ...p, [tracking_number]: true }));
     try {
       await deleteShipment(tracking_number);
@@ -570,7 +555,6 @@ export default function Admin() {
 
   return (
     <div className="admin-layout">
-      {/* Toast */}
       {toast && (
         <div style={{
           position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 99999,
@@ -584,7 +568,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* Sidebar */}
       <div className="admin-sidebar">
         <div className="admin-sidebar-logo">
           <div className="logo-icon"><Anchor size={16} /></div>
@@ -623,9 +606,7 @@ export default function Admin() {
         </button>
       </div>
 
-      {/* Main Content */}
       <div className="admin-main">
-        {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="fade-in">
             <div style={{ marginBottom: '2rem' }}>
@@ -633,7 +614,6 @@ export default function Admin() {
               <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>Overview of all logistics operations</p>
             </div>
 
-            {/* Stats */}
             <div className="admin-stats-grid">
               {[
                 { label: 'Total Shipments', value: stats.total, bg: 'rgba(99,102,241,0.1)', color: '#6366f1', icon: <Package size={22} /> },
@@ -651,7 +631,6 @@ export default function Admin() {
               ))}
             </div>
 
-            {/* Recent Shipments */}
             <div className="admin-card">
               <div className="admin-card-title">
                 <Package size={18} />
@@ -672,37 +651,41 @@ export default function Admin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {shipments.slice(0, 5).map(s => (
-                      <tr key={s.tracking_number}>
-                        <td><span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.85rem' }}>{s.tracking_number}</span></td>
-                        <td style={{ fontSize: '0.82rem' }}>{s.start_location} → {s.end_location}</td>
-                        <td>
-                          <span style={{
-                            padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700,
-                            background: s.status === 'Delivered' ? 'rgba(34,197,94,0.1)' : s.is_paused ? 'rgba(156,163,175,0.1)' : 'rgba(245,158,11,0.1)',
-                            color: s.status === 'Delivered' ? '#16a34a' : s.is_paused ? '#6b7280' : '#d97706',
-                          }}>
-                            {s.status === 'Delivered' ? 'Delivered' : s.is_paused ? 'Paused' : 'In Transit'}
-                          </span>
-                        </td>
-                        <td>
-                          <div style={{ width: 100, height: 6, background: 'var(--border)', borderRadius: '9999px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${s.status === 'Delivered' ? 100 : Math.min(100, ((Date.now() - new Date(s.started_at).getTime()) / (s.total_hours * 3600000)) * 100)}%`, background: 'var(--primary)', borderRadius: '9999px', transition: 'width 0.5s' }} />
-                          </div>
-                        </td>
-                        <td>
-                          <button
-                            className="btn btn-sm btn-outline"
-                            style={{ fontSize: '0.75rem' }}
-                            onClick={() => { setSelectedShipment(s); setActiveTab('shipments'); }}
-                          >
-                            <Eye size={12} /> View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {shipments.slice(0, 5).map(s => {
+                      const elapsed = (Date.now() - new Date(s.started_at).getTime()) / 3600000;
+                      const pct = s.status === 'Delivered' ? 100 : Math.min(100, (elapsed / parseFloat(s.total_hours || 1)) * 100);
+                      return (
+                        <tr key={s.tracking_number}>
+                          <td><span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.85rem' }}>{s.tracking_number}</span></td>
+                          <td style={{ fontSize: '0.82rem' }}>{s.start_location} → {s.end_location}</td>
+                          <td>
+                            <span style={{
+                              padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700,
+                              background: s.status === 'Delivered' ? 'rgba(34,197,94,0.1)' : s.is_paused ? 'rgba(156,163,175,0.1)' : 'rgba(245,158,11,0.1)',
+                              color: s.status === 'Delivered' ? '#16a34a' : s.is_paused ? '#6b7280' : '#d97706',
+                            }}>
+                              {s.status === 'Delivered' ? 'Delivered' : s.is_paused ? 'Paused' : 'In Transit'}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ width: 100, height: 6, background: 'var(--border)', borderRadius: '9999px', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${pct}%`, background: 'var(--primary)', borderRadius: '9999px', transition: 'width 0.5s' }} />
+                            </div>
+                          </td>
+                          <td>
+                            <button
+                              className="btn btn-sm btn-outline"
+                              style={{ fontSize: '0.75rem' }}
+                              onClick={() => { setSelectedShipment(s); setActiveTab('shipments'); }}
+                            >
+                              <Eye size={12} /> View
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                     {shipments.length === 0 && (
-                      <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No shipments yet. Create one to get started.</td></tr>
+                      <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No shipments yet.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -711,7 +694,6 @@ export default function Admin() {
           </div>
         )}
 
-        {/* Shipments Tab */}
         {activeTab === 'shipments' && (
           <div className="fade-in">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -729,28 +711,22 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Search */}
             <div style={{ position: 'relative', marginBottom: '1.5rem', maxWidth: 400 }}>
               <Search size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
                 className="form-control"
                 style={{ paddingLeft: '2.5rem' }}
-                placeholder="Search by tracking number, name, route..."
+                placeholder="Search..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
 
             <div className="admin-shipments-layout" style={{ display: 'grid', gridTemplateColumns: selectedShipment ? '1fr 1fr' : '1fr', gap: '1.5rem' }}>
-              {/* Table */}
               <div className="admin-card" style={{ overflow: 'auto' }}>
-                <div className="admin-card-title">
-                  <Package size={18} />All Shipments
-                </div>
+                <div className="admin-card-title"><Package size={18} />All Shipments</div>
                 {loading ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-                    <div className="spinner" />
-                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}><div className="spinner" /></div>
                 ) : (
                   <table className="admin-table">
                     <thead>
@@ -766,16 +742,8 @@ export default function Admin() {
                       {filteredShipments.map(s => {
                         const isLoading = actionLoading[s.tracking_number];
                         return (
-                          <tr
-                            key={s.tracking_number}
-                            style={{ cursor: 'pointer', background: selectedShipment?.tracking_number === s.tracking_number ? 'rgba(230,48,48,0.04)' : '' }}
-                            onClick={() => setSelectedShipment(s)}
-                          >
-                            <td>
-                              <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.85rem', color: 'var(--primary)' }}>
-                                {s.tracking_number}
-                              </span>
-                            </td>
+                          <tr key={s.tracking_number} style={{ cursor: 'pointer', background: selectedShipment?.tracking_number === s.tracking_number ? 'rgba(230,48,48,0.04)' : '' }} onClick={() => setSelectedShipment(s)}>
+                            <td><span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.85rem', color: 'var(--primary)' }}>{s.tracking_number}</span></td>
                             <td style={{ fontSize: '0.8rem' }}>
                               <div>{s.start_location}</div>
                               <div style={{ color: 'var(--text-muted)' }}>→ {s.end_location}</div>
@@ -798,10 +766,8 @@ export default function Admin() {
                                     style={{ fontSize: '0.72rem', padding: '0.35rem 0.7rem' }}
                                     onClick={() => handlePauseResume(s)}
                                     disabled={isLoading}
-                                    title={s.is_paused ? 'Resume shipment' : 'Pause shipment'}
                                   >
-                                    {isLoading ? <Loader2 size={11} style={{ animation: 'spin 0.8s linear infinite' }} />
-                                      : s.is_paused ? <><Play size={11} /> Resume</> : <><Pause size={11} /> Pause</>}
+                                    {isLoading ? <Loader2 size={11} style={{ animation: 'spin 0.8s linear infinite' }} /> : s.is_paused ? <><Play size={11} /> Resume</> : <><Pause size={11} /> Pause</>}
                                   </button>
                                 )}
                                 {s.status !== 'Delivered' && (
@@ -810,7 +776,6 @@ export default function Admin() {
                                     style={{ fontSize: '0.72rem', padding: '0.35rem 0.7rem' }}
                                     onClick={() => handleMarkDelivered(s.tracking_number)}
                                     disabled={isLoading}
-                                    title="Mark as delivered"
                                   >
                                     <CheckCircle2 size={11} /> Done
                                   </button>
@@ -820,7 +785,6 @@ export default function Admin() {
                                   style={{ fontSize: '0.72rem', padding: '0.35rem 0.7rem', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}
                                   onClick={() => handleDelete(s.tracking_number)}
                                   disabled={isLoading}
-                                  title="Delete shipment"
                                 >
                                   <Trash2 size={11} />
                                 </button>
@@ -837,7 +801,6 @@ export default function Admin() {
                 )}
               </div>
 
-              {/* Detail Panel */}
               {selectedShipment && (
                 <div className="admin-card fade-in">
                   <div className="admin-card-title">
@@ -864,7 +827,7 @@ export default function Admin() {
                       { label: 'Expected Delivery', value: formatDate(selectedShipment.expected_delivery) },
                     ].map(({ label, value }) => (
                       <div key={label}>
-                        <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: '0.2rem', fontWeight: 600 }}>{label}</div>
+                        <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.2rem', fontWeight: 600 }}>{label}</div>
                         <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-dark)' }}>{value || '—'}</div>
                       </div>
                     ))}
@@ -879,27 +842,15 @@ export default function Admin() {
                   <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap' }}>
                     {selectedShipment.status !== 'Delivered' && (
                       <>
-                        <button
-                          className={`btn btn-sm flex-1 ${selectedShipment.is_paused ? 'btn-primary' : 'btn-outline'}`}
-                          onClick={() => handlePauseResume(selectedShipment)}
-                          disabled={actionLoading[selectedShipment.tracking_number]}
-                        >
-                          {selectedShipment.is_paused ? <><Play size={14} /> Resume Shipment</> : <><Pause size={14} /> Pause Shipment</>}
+                        <button className={`btn btn-sm flex-1 ${selectedShipment.is_paused ? 'btn-primary' : 'btn-outline'}`} onClick={() => handlePauseResume(selectedShipment)} disabled={actionLoading[selectedShipment.tracking_number]}>
+                          {selectedShipment.is_paused ? <><Play size={14} /> Resume</> : <><Pause size={14} /> Pause</>}
                         </button>
-                        <button
-                          className="btn btn-sm btn-secondary flex-1"
-                          onClick={() => handleMarkDelivered(selectedShipment.tracking_number)}
-                          disabled={actionLoading[selectedShipment.tracking_number]}
-                        >
+                        <button className="btn btn-sm btn-secondary flex-1" onClick={() => handleMarkDelivered(selectedShipment.tracking_number)} disabled={actionLoading[selectedShipment.tracking_number]}>
                           <CheckCircle2 size={14} /> Mark Delivered
                         </button>
                       </>
                     )}
-                    <button
-                      className="btn btn-sm w-full"
-                      style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}
-                      onClick={() => handleDelete(selectedShipment.tracking_number)}
-                    >
+                    <button className="btn btn-sm w-full" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }} onClick={() => handleDelete(selectedShipment.tracking_number)} disabled={actionLoading[selectedShipment.tracking_number]}>
                       <Trash2 size={14} /> Delete Shipment
                     </button>
                   </div>
@@ -909,12 +860,11 @@ export default function Admin() {
           </div>
         )}
 
-        {/* Messages Tab */}
         {activeTab === 'messages' && (
           <div className="fade-in">
             <div style={{ marginBottom: '1.5rem' }}>
               <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.25rem' }}>Contact Messages</h1>
-              <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>{messages.length} messages from clients</p>
+              <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>{messages.length} messages</p>
             </div>
             <div className="admin-card">
               <div className="admin-card-title"><MessageSquare size={18} />Inbox</div>
@@ -942,7 +892,6 @@ export default function Admin() {
           </div>
         )}
 
-        {/* Live Chat Tab */}
         {activeTab === 'live_chat' && (
           <div className="fade-in admin-chat-page" style={{ height: 'calc(100vh - 4rem)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ marginBottom: '1.5rem', flexShrink: 0 }}>
@@ -951,7 +900,6 @@ export default function Admin() {
             </div>
             
             <div className="admin-chat-layout" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '1.5rem', flex: 1, minHeight: 0 }}>
-              {/* Sidebar: Chat sessions */}
               <div className="admin-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
                 <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
                   <span>Active Sessions</span>
@@ -968,9 +916,7 @@ export default function Admin() {
                         key={session.tracking_number}
                         onClick={() => joinChat(session.tracking_number)}
                         style={{
-                          padding: '1rem',
-                          borderBottom: '1px solid var(--border)',
-                          cursor: 'pointer',
+                          padding: '1rem', borderBottom: '1px solid var(--border)', cursor: 'pointer',
                           background: activeChatId === session.tracking_number ? 'rgba(230,48,48,0.05)' : 'transparent',
                           borderLeft: activeChatId === session.tracking_number ? '3px solid var(--primary)' : '3px solid transparent',
                         }}
@@ -983,7 +929,6 @@ export default function Admin() {
                 </div>
               </div>
 
-              {/* Chat Window */}
               <div className="admin-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
                 {activeChatId ? (
                   <>
@@ -993,16 +938,16 @@ export default function Admin() {
                     
                     <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--bg-light)' }}>
                       {(liveChats[activeChatId] || []).map((msg, idx) => {
-                        const isAdmin = msg.sender === 'admin';
+                        const isAdminMsg = msg.sender === 'admin';
                         return (
-                          <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: isAdmin ? 'flex-end' : 'flex-start' }}>
+                          <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: isAdminMsg ? 'flex-end' : 'flex-start' }}>
                             <div style={{
                               maxWidth: '75%', padding: '0.75rem 1rem', borderRadius: '1rem', fontSize: '0.9rem',
-                              background: isAdmin ? 'var(--primary)' : 'white',
-                              color: isAdmin ? 'white' : 'var(--text-dark)',
-                              border: isAdmin ? 'none' : '1px solid var(--border)',
-                              borderBottomRightRadius: isAdmin ? '0' : '1rem',
-                              borderBottomLeftRadius: isAdmin ? '1rem' : '0'
+                              background: isAdminMsg ? 'var(--primary)' : 'white',
+                              color: isAdminMsg ? 'white' : 'var(--text-dark)',
+                              border: isAdminMsg ? 'none' : '1px solid var(--border)',
+                              borderBottomRightRadius: isAdminMsg ? '0' : '1rem',
+                              borderBottomLeftRadius: isAdminMsg ? '1rem' : '0'
                             }}>
                               {msg.message}
                             </div>
@@ -1017,11 +962,8 @@ export default function Admin() {
 
                     <form onSubmit={sendAdminMessage} style={{ display: 'flex', gap: '0.5rem', padding: '1rem', borderTop: '1px solid var(--border)' }}>
                       <input
-                        className="form-control"
-                        style={{ flex: 1 }}
-                        placeholder="Type a message..."
-                        value={liveChatInput}
-                        onChange={e => setLiveChatInput(e.target.value)}
+                        className="form-control" style={{ flex: 1 }} placeholder="Type a message..."
+                        value={liveChatInput} onChange={e => setLiveChatInput(e.target.value)}
                       />
                       <button type="submit" className="btn btn-primary" disabled={!liveChatInput.trim()}>
                         <Send size={18} />
@@ -1039,7 +981,6 @@ export default function Admin() {
         )}
       </div>
 
-      {/* Shipment Modal */}
       {showModal && (
         <ShipmentModal
           onClose={() => setShowModal(false)}
