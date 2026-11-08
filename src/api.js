@@ -63,3 +63,18 @@ export const getMessages = () =>
 
 export const getChats = () =>
   fetch(`${API_BASE}/chats`, { headers: getHeaders() }).then(handleResponse);
+
+// Upload Product Image
+export const uploadImage = async (file) => {
+  const token = localStorage.getItem('admin_token');
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const res = await fetch(`${API_BASE}/upload`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  return handleResponse(res);
+};
+

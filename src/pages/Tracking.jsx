@@ -3,7 +3,10 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Search, Package, MapPin, Clock, Weight, AlertCircle, CheckCircle2, Loader2, Navigation } from 'lucide-react';
+import {
+  Search, Package, MapPin, Clock, Weight, AlertCircle, CheckCircle2,
+  Loader2, Navigation, ZoomIn, X, Image as ImageIcon
+} from 'lucide-react';
 import { trackShipment } from '../api';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -71,6 +74,7 @@ export default function Tracking() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [livePos, setLivePos] = useState(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
   const intervalRef = useRef(null);
 
   const fetchShipment = async (id) => {
@@ -130,6 +134,20 @@ export default function Tracking() {
     if (!d) return '—';
     return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
+
+  const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '');
+
+  const productImageUrl = useMemo(() => {
+    if (!shipment?.product_image) return null;
+    if (
+      shipment.product_image.startsWith('http://') ||
+      shipment.product_image.startsWith('https://') ||
+      shipment.product_image.startsWith('data:')
+    ) {
+      return shipment.product_image;
+    }
+    return `${API_ORIGIN}${shipment.product_image.startsWith('/') ? '' : '/'}${shipment.product_image}`;
+  }, [shipment?.product_image, API_ORIGIN]);
 
   return (
     <>
@@ -231,6 +249,125 @@ export default function Tracking() {
                 </div>
               </div>
 
+              {/* Product / Cargo Image (Clear, High-Visibility Display) */}
+              {productImageUrl && (
+                <div style={{
+                  margin: '1.75rem 0',
+                  background: 'white',
+                  borderRadius: 'var(--radius-lg, 12px)',
+                  border: '1px solid #e2e8f0',
+                  padding: '1.5rem',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '1rem',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem',
+                  }}>
+                    <div>
+                      <div style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: 'var(--primary, #e63030)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        marginBottom: '0.2rem',
+                      }}>
+                        <ImageIcon size={15} /> Verified Shipment Item
+                      </div>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0b1a2c', margin: 0 }}>
+                        Product & Cargo Image
+                      </h3>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setImageModalOpen(true)}
+                      className="btn btn-outline btn-sm"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        fontSize: '0.8rem',
+                        padding: '0.45rem 0.9rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <ZoomIn size={14} /> View Fullscreen
+                    </button>
+                  </div>
+
+                  <div
+                    onClick={() => setImageModalOpen(true)}
+                    style={{
+                      position: 'relative',
+                      background: '#f8fafc',
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      padding: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'zoom-in',
+                      overflow: 'hidden',
+                      maxHeight: '440px',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
+                    }}
+                    title="Click to view image fullscreen"
+                  >
+                    <img
+                      src={productImageUrl}
+                      alt={`Product for shipment ${shipment.tracking_number}`}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '420px',
+                        objectFit: 'contain',
+                        borderRadius: '6px',
+                        display: 'block',
+                      }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '1rem',
+                      right: '1rem',
+                      background: 'rgba(11, 26, 44, 0.85)',
+                      color: 'white',
+                      padding: '0.4rem 0.8rem',
+                      borderRadius: '20px',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      backdropFilter: 'blur(4px)',
+                      pointerEvents: 'none',
+                    }}>
+                      <ZoomIn size={13} /> Click to enlarge
+                    </div>
+                  </div>
+
+                  {shipment.description && (
+                    <div style={{
+                      marginTop: '1rem',
+                      padding: '0.85rem 1rem',
+                      background: '#f8fafc',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      fontSize: '0.875rem',
+                      color: '#475569',
+                    }}>
+                      <strong style={{ color: '#0b1a2c' }}>Package Notes / Description:</strong> {shipment.description}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Map */}
               <div className="tracking-map-wrapper">
                 <MapContainer
@@ -306,6 +443,89 @@ export default function Tracking() {
           )}
         </div>
       </div>
+
+      {/* Fullscreen High-Res Image Modal */}
+      {imageModalOpen && productImageUrl && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(11, 26, 44, 0.94)',
+            zIndex: 99999,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            backdropFilter: 'blur(8px)',
+          }}
+          onClick={() => setImageModalOpen(false)}
+        >
+          <div
+            style={{
+              position: 'relative',
+              maxWidth: '94vw',
+              maxHeight: '92vh',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '0.85rem',
+              color: 'white',
+              gap: '0.5rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, overflow: 'hidden' }}>
+                <Package size={20} color="#e63030" style={{ flexShrink: 0 }} />
+                <span style={{ fontWeight: 800, fontSize: '0.95rem', letterSpacing: '0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {shipment?.tracking_number} — Cargo & Product Photo
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setImageModalOpen(false)}
+                style={{
+                  background: 'rgba(255,255,255,0.18)',
+                  border: 'none',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '38px',
+                  height: '38px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 0.2s',
+                  flexShrink: 0,
+                }}
+                title="Close fullscreen view"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <img
+              src={productImageUrl}
+              alt="Product full resolution"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '82vh',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                background: '#07101c',
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       <Footer />
     </>

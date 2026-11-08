@@ -5,11 +5,11 @@ import 'leaflet/dist/leaflet.css';
 import {
   Anchor, LayoutDashboard, Package, MessageSquare, LogOut,
   Plus, Trash2, Pause, Play, CheckCircle2, XCircle, AlertCircle,
-  Loader2, RefreshCw, Search, X, Eye, Mail, Send
+  Loader2, RefreshCw, Search, X, Eye, Mail, Send, Image as ImageIcon
 } from 'lucide-react';
 import {
   adminLogin, createShipment, getShipments, updateShipment,
-  deleteShipment, getMessages, getChats
+  deleteShipment, getMessages, getChats, uploadImage
 } from '../api';
 import { io } from 'socket.io-client';
 
@@ -136,13 +136,54 @@ function ShipmentModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
     tracking_number: generateTrackingNumber(),
     sender_name: '', sender_address: '', receiver_name: '', receiver_address: '',
+    receiver_email: '', product_image: '',
     start_location: '', end_location: '', total_hours: '', weight: '',
     description: '', package_type: '',
   });
   const [loading, setLoading] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState('');
   const [errors, setErrors] = useState({});
   const [geoError, setGeoError] = useState('');
+  const fileInputRef = useRef(null);
+
+  const handleImageFile = async (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setGeoError('Please select a valid image file (PNG, JPG, WEBP, etc.)');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setGeoError('Image size exceeds 10MB limit.');
+      return;
+    }
+    setUploadingImage(true);
+    setGeoError('');
+    try {
+      const localPreview = URL.createObjectURL(file);
+      setImagePreview(localPreview);
+      const res = await uploadImage(file);
+      f('product_image', res.imageUrl);
+    } catch (err) {
+      setGeoError(err.message || 'Failed to upload product image');
+      setImagePreview('');
+      f('product_image', '');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) handleImageFile(file);
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview('');
+    f('product_image', '');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const validate = () => {
     const e = {};
@@ -151,6 +192,9 @@ function ShipmentModal({ onClose, onCreated }) {
     if (!form.end_location.trim()) e.end_location = 'Required';
     if (!form.total_hours || isNaN(form.total_hours) || Number(form.total_hours) <= 0) e.total_hours = 'Enter valid hours > 0';
     if (!form.weight.trim()) e.weight = 'Required';
+    if (form.receiver_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.receiver_email.trim())) {
+      e.receiver_email = 'Invalid email address';
+    }
     return e;
   };
 
@@ -172,6 +216,8 @@ function ShipmentModal({ onClose, onCreated }) {
       setLoading(true);
       await createShipment({
         ...form,
+        receiver_email: form.receiver_email ? form.receiver_email.trim() : null,
+        product_image: form.product_image || null,
         start_lat: startGeo.lat,
         start_lng: startGeo.lng,
         end_lat: endGeo.lat,
@@ -251,6 +297,23 @@ function ShipmentModal({ onClose, onCreated }) {
             </div>
           </div>
 
+          <div className="form-group">
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Mail size={14} color="var(--primary)" /> Receiver Email (for shipment tracking notification)
+            </label>
+            <input
+              type="email"
+              className={`form-control ${errors.receiver_email ? 'error' : ''}`}
+              value={form.receiver_email}
+              onChange={e => f('receiver_email', e.target.value)}
+              placeholder="customer@example.com"
+            />
+            {errors.receiver_email && <div className="form-error">{errors.receiver_email}</div>}
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
+              When set, an automated email will be sent immediately saying their package is on the way with their tracking number.
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
               <label className="form-label">Origin Location *</label>
@@ -320,6 +383,103 @@ function ShipmentModal({ onClose, onCreated }) {
               placeholder="Cargo contents, special handling instructions..."
               rows={2}
             />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <ImageIcon size={14} color="var(--primary)" /> Product / Cargo Image (Optional)
+              </span>
+              {uploadingImage && (
+                <span style={{ fontSize: '0.78rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <Loader2 size={13} style={{ animation: 'spin 0.8s linear infinite' }} /> Uploading...
+                </span>
+              )}
+            </label>
+
+            {imagePreview || form.product_image ? (
+              <div style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                padding: '0.75rem 1rem',
+                border: '1px solid #bbf7d0',
+                borderRadius: 'var(--radius-md)',
+                background: '#f0fdf4',
+                flexWrap: 'wrap',
+              }}>
+                <img
+                  src={imagePreview || (form.product_image.startsWith('http') ? form.product_image : `${SOCKET_URL}${form.product_image}`)}
+                  alt="Product preview"
+                  style={{ width: '80px', height: '80px', borderRadius: 'var(--radius-sm)', objectFit: 'cover', border: '1px solid #cbd5e1', flexShrink: 0 }}
+                />
+                <div style={{ flex: '1 1 180px', minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#166534', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <CheckCircle2 size={15} /> Product Image Attached
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#4b5563', marginTop: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {form.product_image || 'Uploaded file'}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  style={{
+                    background: '#fee2e2',
+                    color: '#b91c1c',
+                    border: '1px solid #fecaca',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '0.4rem 0.75rem',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem'
+                  }}
+                >
+                  <X size={14} /> Remove
+                </button>
+              </div>
+            ) : (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: '2px dashed #cbd5e1',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '1.25rem 1rem',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  background: '#f8fafc',
+                  transition: 'all 0.2s',
+                }}
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--primary)'; }}
+                onDragLeave={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.style.borderColor = '#cbd5e1';
+                  if (e.dataTransfer.files?.[0]) handleImageFile(e.dataTransfer.files[0]);
+                }}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  style={{ display: 'none' }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', color: 'var(--text-light)' }}>
+                  <ImageIcon size={26} color="#94a3b8" />
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-dark)' }}>
+                    Click or drag & drop to upload product photo
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Supports PNG, JPG, JPEG, WEBP, GIF (Max 10MB)
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
@@ -823,15 +983,35 @@ export default function Admin() {
                       { label: 'Destination', value: selectedShipment.end_location },
                       { label: 'Sender', value: selectedShipment.sender_name },
                       { label: 'Receiver', value: selectedShipment.receiver_name },
+                      { label: 'Receiver Email', value: selectedShipment.receiver_email },
                       { label: 'Created', value: formatDate(selectedShipment.created_at) },
                       { label: 'Expected Delivery', value: formatDate(selectedShipment.expected_delivery) },
                     ].map(({ label, value }) => (
                       <div key={label}>
                         <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.2rem', fontWeight: 600 }}>{label}</div>
-                        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-dark)' }}>{value || '—'}</div>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-dark)', wordBreak: 'break-all' }}>{value || '—'}</div>
                       </div>
                     ))}
                   </div>
+
+                  {selectedShipment.product_image && (
+                    <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--bg-light)', borderRadius: 'var(--radius-md)' }}>
+                      <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <ImageIcon size={14} /> Product / Cargo Photo
+                      </div>
+                      <a
+                        href={selectedShipment.product_image.startsWith('http') ? selectedShipment.product_image : `${SOCKET_URL}${selectedShipment.product_image}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={selectedShipment.product_image.startsWith('http') ? selectedShipment.product_image : `${SOCKET_URL}${selectedShipment.product_image}`}
+                          alt="Product cargo"
+                          style={{ maxHeight: '180px', maxWidth: '100%', borderRadius: 'var(--radius-sm)', objectFit: 'cover', display: 'block', border: '1px solid var(--border)' }}
+                        />
+                      </a>
+                    </div>
+                  )}
 
                   {selectedShipment.description && (
                     <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--bg-light)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', color: 'var(--text-mid)' }}>
